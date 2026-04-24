@@ -25,34 +25,47 @@ FRONTEND_DIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fronte
 
 api = Blueprint('api', __name__, url_prefix='/api')
 
+# In-memory caches — eliminates repeated Volume I/O on every request.
+# Safe with 1 Gunicorn worker + threads (single process, shared memory).
+_users_cache: dict | None = None
+_planner_cache: dict = {}
+
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
 def load_users() -> dict:
-    try:
-        with open(USERS_FILE, 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {}
+    global _users_cache
+    if _users_cache is None:
+        try:
+            with open(USERS_FILE, 'r') as f:
+                _users_cache = json.load(f)
+        except FileNotFoundError:
+            _users_cache = {}
+    return _users_cache
 
 
 def save_users(users: dict):
+    global _users_cache
     with open(USERS_FILE, 'w') as f:
         json.dump(users, f)
+    _users_cache = users
 
 
 def get_planner(user_id: str) -> CognitiveTaskPlanner:
-    planner = CognitiveTaskPlanner()
-    state_path = os.path.join(DATA_DIR, f'{user_id}.json')
-    if os.path.exists(state_path):
-        planner.load_state(state_path)
-    return planner
+    if user_id not in _planner_cache:
+        planner = CognitiveTaskPlanner()
+        state_path = os.path.join(DATA_DIR, f'{user_id}.json')
+        if os.path.exists(state_path):
+            planner.load_state(state_path)
+        _planner_cache[user_id] = planner
+    return _planner_cache[user_id]
 
 
 def save_planner(planner: CognitiveTaskPlanner, user_id: str):
     planner.save_state(os.path.join(DATA_DIR, f'{user_id}.json'))
+    _planner_cache[user_id] = planner
 
 
 def parse_tasks(task_list: list) -> list[Task]:
