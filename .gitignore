@@ -1,0 +1,17 @@
+users.json
+data/
+*.pkl
+__pycache__/
+*.pyc
+.env
+
+node_modules/
+frontend/dist/
+
+.DS_Store
+.venv/
+venv/
+.hci/
+
+.claude/
+CLAUDE.md
