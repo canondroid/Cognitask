@@ -47,8 +47,8 @@ export default function TaskForm({ onChange, initialTasks }) {
   return (
     <div className="space-y-3">
       {tasks.map((task, i) => (
-        <div key={i} className="flex gap-2 items-end">
-          <div className="flex flex-col gap-1 flex-1">
+        <div key={i} className="flex flex-wrap gap-2 items-end">
+          <div className="flex flex-col gap-1 w-full sm:flex-1">
             {i === 0 && <label className="text-xs text-muted-foreground">Task Name</label>}
             <Input
               placeholder="Task name"
